@@ -1,0 +1,1 @@
+// (File removed: ChatbotInterface.tsx was the AI assistant component)

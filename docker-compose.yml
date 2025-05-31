@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7
+    container_name: unichat-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  backend:
+    build: ./server
+    container_name: unichat-backend
+    ports:
+      - "5000:5000" # Change to your backend port if different
+    env_file:
+      - ./server/.env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - redis
+    volumes:
+      - ./server:/usr/src/app
+    command: npm run dev # Or your backend start command
+
+  # (Optional) Add frontend if you want to dockerize it too
+  # frontend:
+  #   build: ./client
+  #   container_name: unichat-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   volumes:
+  #     - ./client:/usr/src/app
+  #   command: npm start
