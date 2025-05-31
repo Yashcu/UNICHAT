@@ -5,34 +5,54 @@ services:
     image: redis:7
     container_name: unichat-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"  # Only allow local connections
     restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}  # Add password protection
+    volumes:
+      - redis_data:/data  # Use named volume for persistence
+    networks:
+      - unichat_network
 
   backend:
     build: ./server
     container_name: unichat-backend
     ports:
-      - "5000:5000" # Change to your backend port if different
+      - "127.0.0.1:5000:5000"  # Only allow local connections
     env_file:
       - ./server/.env
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - FRONTEND_URL=http://localhost:3000
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - NODE_ENV=production
     depends_on:
       - redis
     volumes:
-      - ./server:/usr/src/app
-    command: npm run dev # Or your backend start command
+      - ./server:/usr/src/app:ro  # Read-only mount
+      - /usr/src/app/node_modules  # Anonymous volume for node_modules
+    restart: unless-stopped
+    networks:
+      - unichat_network
 
   # (Optional) Add frontend if you want to dockerize it too
   # frontend:
   #   build: ./client
   #   container_name: unichat-frontend
   #   ports:
-  #     - "3000:3000"
+  #     - "127.0.0.1:3000:3000"  # Only allow local connections
   #   depends_on:
   #     - backend
   #   volumes:
-  #     - ./client:/usr/src/app
-  #   command: npm start
+  #     - ./client:/usr/src/app:ro  # Read-only mount
+  #     - /usr/src/app/node_modules  # Anonymous volume for node_modules
+  #   restart: unless-stopped
+  #   networks:
+  #     - unichat_network
+
+volumes:
+  redis_data:  # Named volume for Redis data
+
+networks:
+  unichat_network:
+    driver: bridge
