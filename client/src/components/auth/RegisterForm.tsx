@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Lock, Mail, User, UserCircle } from 'lucide-react';
 import { UserRole } from '../../types';
 import toast from 'react-hot-toast';
+import FormField from '../shared/FormField';
+import ButtonSpinner from '../shared/ButtonSpinner';
 
 type RegisterFormData = {
   name: string;
@@ -15,7 +17,7 @@ type RegisterFormData = {
 };
 
 const RegisterForm = () => {
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<RegisterFormData>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting }, setError } = useForm<RegisterFormData>({
     defaultValues: {
       role: 'student'
     }
@@ -24,8 +26,10 @@ const RegisterForm = () => {
   const navigate = useNavigate();
 
   const password = watch('password');
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const onSubmit = async (data: RegisterFormData) => {
+    setRegisterError(null); // Clear previous errors
     try {
       console.log('Attempting registration with data:', { ...data, password: '***' });
       await registerUser(data.name, data.email, data.password, data.role);
@@ -42,112 +46,73 @@ const RegisterForm = () => {
       });
       
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
+      setRegisterError(errorMessage);
       toast.error(errorMessage);
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md animate-fade-in">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-          Full Name
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <User size={18} className="text-gray-400" />
-          </div>
-          <input
-            id="name"
-            type="text"
-            {...register('name', { required: 'Name is required' })}
-            className="input pl-10"
-            placeholder="John Doe"
-          />
-        </div>
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-        )}
-      </div>
+      <FormField
+        label="Full Name"
+        name="name"
+        type="text"
+        icon={<User size={18} className="text-gray-400" />}
+        register={register}
+        error={errors}
+        placeholder="John Doe"
+        validationRules={{ required: 'Name is required' }}
+      />
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-          Email Address
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Mail size={18} className="text-gray-400" />
-          </div>
-          <input
-            id="email"
-            type="email"
-            {...register('email', { 
-              required: 'Email is required', 
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address',
-              } 
-            })}
-            className="input pl-10"
-            placeholder="your.email@university.edu"
-          />
-        </div>
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-        )}
-      </div>
+      <FormField
+        label="Email Address"
+        name="email"
+        type="email"
+        icon={<Mail size={18} className="text-gray-400" />}
+        register={register}
+        error={errors}
+        placeholder="your.email@university.edu"
+        validationRules={{
+          required: 'Email is required',
+          pattern: {
+            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+            message: 'Invalid email address',
+          },
+        }}
+      />
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Lock size={18} className="text-gray-400" />
-          </div>
-          <input
-            id="password"
-            type="password"
-            {...register('password', { 
-              required: 'Password is required',
-              minLength: {
-                value: 6,
-                message: 'Password must be at least 6 characters',
-              } 
-            })}
-            className="input pl-10"
-            placeholder="••••••••"
-          />
-        </div>
-        {errors.password && (
-          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-        )}
-      </div>
+      <FormField
+        label="Password"
+        name="password"
+        type="password"
+        icon={<Lock size={18} className="text-gray-400" />}
+        register={register}
+        error={errors}
+        placeholder="••••••••"
+        validationRules={{
+          required: 'Password is required',
+          minLength: {
+            value: 6,
+            message: 'Password must be at least 6 characters',
+          },
+        }}
+      />
 
-      <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-          Confirm Password
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Lock size={18} className="text-gray-400" />
-          </div>
-          <input
-            id="confirmPassword"
-            type="password"
-            {...register('confirmPassword', { 
-              required: 'Please confirm your password',
-              validate: value => value === password || 'Passwords do not match'
-            })}
-            className="input pl-10"
-            placeholder="••••••••"
-          />
-        </div>
-        {errors.confirmPassword && (
-          <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-        )}
-      </div>
+      <FormField
+        label="Confirm Password"
+        name="confirmPassword"
+        type="password"
+        icon={<Lock size={18} className="text-gray-400" />}
+        register={register}
+        error={errors}
+        placeholder="••••••••"
+        validationRules={{
+          required: 'Please confirm your password',
+          validate: value => value === password || 'Passwords do not match'
+        }}
+      />
 
-      <div>
+      <div> {/* Role selection doesn't fit FormField structure directly */}
         <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
           Role
         </label>
@@ -165,18 +130,19 @@ const RegisterForm = () => {
             <option value="admin">Admin</option>
           </select>
         </div>
+        {/* No error display needed for role based on current validation */}
       </div>
+
+      {registerError && (
+        <p className="mt-2 text-sm text-red-600 text-center">{registerError}</p>
+      )}
 
       <button
         type="submit"
         disabled={isSubmitting}
         className="btn-primary w-full flex justify-center"
       >
-        {isSubmitting ? (
-          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-        ) : (
-          'Register'
-        )}
+        {isSubmitting ? <ButtonSpinner /> : 'Register'}
       </button>
 
       <p className="text-center text-sm text-gray-600">

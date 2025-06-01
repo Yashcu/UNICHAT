@@ -1,21 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCirculars } from '../hooks/useCirculars';
 import CircularCard from '../components/circulars/CircularCard';
 import CircularDetail from '../components/circulars/CircularDetail';
 import { Search, Plus } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import LoadingSpinner from '../components/shared/LoadingSpinner';
+// Assuming a modal component for New Circular exists or will be created
+// import NewCircularModal from '../components/circulars/NewCircularModal'; 
 
 const CircularsPage = () => {
-  const { circulars, selectedCircular, selectCircular } = useCirculars();
+  const { circulars, selectedCircular, selectCircular, isLoading, error } = useCirculars();
   const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = React.useState('');
-  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showNewCircularModal, setShowNewCircularModal] = useState(false); // State for modal
+
+  useEffect(() => {
+    console.log('CircularsPage - isLoading:', isLoading, 'error:', error, 'circulars:', circulars);
+  }, [isLoading, error, circulars]);
+
   const filteredCirculars = searchTerm 
     ? circulars.filter(circular => 
         circular.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         circular.content.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : circulars;
+
+  const handleNewCircularClick = () => {
+    setShowNewCircularModal(true);
+  };
+
+  const handleCloseNewCircularModal = () => {
+    setShowNewCircularModal(false);
+  };
+
+  // Display loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  // Display error state
+  if (error) {
+    return (
+      <div className="text-center text-red-600 mt-8">
+        <p>Error loading circulars: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -28,7 +62,10 @@ const CircularsPage = () => {
         </div>
         
         {user?.role === 'admin' && (
-          <button className="btn-primary flex items-center">
+          <button 
+            className="btn-primary flex items-center"
+            onClick={handleNewCircularClick} // Add click handler
+          >
             <Plus size={18} className="mr-2" />
             New Circular
           </button>
@@ -61,7 +98,7 @@ const CircularsPage = () => {
             ))
           ) : (
             <div className="bg-white rounded-lg p-8 text-center">
-              <p className="text-gray-500">No circulars found</p>
+              <p className="text-gray-500">No circulars found{searchTerm && ` for '${searchTerm}'`}.</p>
             </div>
           )}
         </div>
@@ -75,6 +112,11 @@ const CircularsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Placeholder for New Circular Modal */}
+      {/* {showNewCircularModal && (
+        <NewCircularModal onClose={handleCloseNewCircularModal} />
+      )} */}
     </div>
   );
 };

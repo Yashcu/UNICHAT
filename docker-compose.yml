@@ -7,7 +7,7 @@ services:
     ports:
       - "127.0.0.1:6379:6379"  # Only allow local connections
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD}  # Add password protection
+    command: ["redis-server", "--requirepass", "yashgarg"]
     volumes:
       - redis_data:/data  # Use named volume for persistence
     networks:
@@ -23,8 +23,6 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - FRONTEND_URL=${FRONTEND_URL}
       - NODE_ENV=production
     depends_on:
       - redis
@@ -35,24 +33,8 @@ services:
     networks:
       - unichat_network
 
-  # (Optional) Add frontend if you want to dockerize it too
-  # frontend:
-  #   build: ./client
-  #   container_name: unichat-frontend
-  #   ports:
-  #     - "127.0.0.1:3000:3000"  # Only allow local connections
-  #   depends_on:
-  #     - backend
-  #   volumes:
-  #     - ./client:/usr/src/app:ro  # Read-only mount
-  #     - /usr/src/app/node_modules  # Anonymous volume for node_modules
-  #   restart: unless-stopped
-  #   networks:
-  #     - unichat_network
-
 volumes:
-  redis_data:  # Named volume for Redis data
-
+  redis_data:
 networks:
   unichat_network:
     driver: bridge

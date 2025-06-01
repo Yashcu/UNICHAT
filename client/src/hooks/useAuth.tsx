@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import api from '../utils/api';
 import { User, UserRole } from '../types';
+import { loginUser, registerUser, fetchUserProfile, logoutUser } from '../utils/api';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  authError: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
+  clearAuthError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +17,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const clearAuthError = () => setAuthError(null);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -26,12 +31,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsLoading(false);
           return;
         }
-        const { data } = await api.get('/users/profile');
+        const { data } = await fetchUserProfile();
         setUser(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth check error:', error);
         localStorage.removeItem('token');
         setUser(null);
+        setAuthError(error.message || 'Failed to fetch user profile.');
       } finally {
         setIsLoading(false);
       }
@@ -41,13 +47,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    setAuthError(null); // Clear previous errors
     try {
-      const { data } = await api.post('/users/login', { email, password });
+      const { data } = await loginUser(email, password);
       localStorage.setItem('token', data.token);
       setUser(data.user);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      throw error;
+      setAuthError(error.response?.data?.message || error.message || 'Login failed. Please try again.');
+      throw error; // Re-throw to allow components to handle
     } finally {
       setIsLoading(false);
     }
@@ -55,40 +63,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (name: string, email: string, password: string, role: UserRole) => {
     setIsLoading(true);
+    setAuthError(null); // Clear previous errors
     try {
-      const { data } = await api.post('/users/register', {
-        name,
-        email,
-        password,
-        role
-      });
+      const { data } = await registerUser(name, email, password, role);
       localStorage.setItem('token', data.token);
       setUser(data.user);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      throw error;
+       setAuthError(error.response?.data?.message || error.message || 'Registration failed. Please try again.');
+      throw error; // Re-throw to allow components to handle
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = async () => {
+    setAuthError(null); // Clear previous errors
     try {
-      await api.post('/users/logout');
+      await logoutUser();
       localStorage.removeItem('token');
       setUser(null);
-      window.location.href = '/auth/login';
-    } catch (error) {
+      // Consider using navigate instead of window.location.href for SPA
+      window.location.href = '/auth/login'; 
+    } catch (error: any) {
       console.error('Logout error:', error);
       // Even if the server request fails, clear local state
       localStorage.removeItem('token');
       setUser(null);
+       setAuthError(error.message || 'Logout failed.');
       window.location.href = '/auth/login';
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, authError, login, register, logout, clearAuthError }}>
       {children}
     </AuthContext.Provider>
   );
