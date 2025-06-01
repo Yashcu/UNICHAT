@@ -12,6 +12,8 @@ import {
   Users, 
   Home 
 } from 'lucide-react';
+import SidebarNavItem from './SidebarNavItem';
+import UserAvatar from '../shared/UserAvatar';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
@@ -73,31 +75,20 @@ const Sidebar = () => {
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="px-4 space-y-1">
           {filteredNavItems.map((item) => (
-            <NavLink
+            <SidebarNavItem
               key={item.path}
-              to={item.path}
-              className={({ isActive }) => cn(
-                'flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                isActive 
-                  ? 'bg-primary-50 text-primary-600' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              )}
-            >
-              <item.icon className="mr-3 h-5 w-5" />
-              {item.label}
-            </NavLink>
+              path={item.path}
+              label={item.label}
+              icon={item.icon}
+            />
           ))}
         </nav>
       </div>
 
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="avatar h-10 w-10">
-            <img 
-              src={user?.profilePic || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=4F46E5&color=fff`} 
-              alt={user?.name || 'User'} 
-            />
-          </div>
+          {/* Using the reusable UserAvatar component */}
+          <UserAvatar user={user || { name: 'User' }} size="h-10 w-10" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
               {user?.name || 'User Name'}

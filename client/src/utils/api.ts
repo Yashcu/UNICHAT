@@ -32,3 +32,39 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Authentication API calls
+export const loginUser = (email: string, password: string) => 
+  api.post('/users/login', { email, password });
+
+export const registerUser = (name: string, email: string, password: string, role: string) => 
+  api.post('/users/register', { name, email, password, role });
+
+export const fetchUserProfile = () => 
+  api.get('/users/profile');
+
+export const logoutUser = () => 
+  api.post('/users/logout');
+
+// Circulars API calls
+export const fetchCirculars = () => 
+  api.get('/circulars');
+
+export const createCircular = (circular: any) => // Use a more specific type if available
+  api.post('/circulars', circular);
+
+// Messaging API calls
+export const fetchChats = () =>
+  api.get('/chats');
+
+export const fetchMessagesByChatId = (chatId: string, limit: number, skip: number) =>
+  api.get(`/messages/${chatId}?limit=${limit}&skip=${skip}`);
+
+export const sendMessageToChat = (content: string, chatId: string) =>
+  api.post('/messages', { content, chatId });
+
+export const reactToMessageApi = (messageId: string, emoji: string) =>
+  api.patch(`/messages/${messageId}/reactions`, { emoji });
+
+export const markMessageReadApi = (messageId: string) =>
+  api.put('/messages/read', { messageId });
