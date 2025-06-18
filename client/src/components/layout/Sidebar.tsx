@@ -1,12 +1,10 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
 import { 
   MessageSquare, 
   FileText, 
   Bell, 
-  HelpCircle, 
+  // HelpCircle, // Removed unused import
   Settings, 
   LogOut, 
   Users, 

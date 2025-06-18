@@ -1,7 +1,7 @@
 import React from 'react';
 import { Notification } from '../../types';
 import { format } from 'date-fns';
-import { Bell, AlertTriangle, CalendarClock, Info, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Info, CheckCircle } from 'lucide-react'; // Removed Bell
 import { cn } from '../../utils/cn';
 
 interface NotificationItemProps {

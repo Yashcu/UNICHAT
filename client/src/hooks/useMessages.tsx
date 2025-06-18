@@ -1,172 +1,143 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Chat, Message, User } from '../types'; // Import User type
+import { useState } from 'react'; // Removed useEffect, useCallback
+import { Chat, Message } from '../types';
 import { useAuth } from './useAuth';
 import {
-  fetchChats as fetchChatsApi, // Alias to avoid name conflict
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient
+} from '@tanstack/react-query';
+import {
+  fetchChats as fetchChatsApi,
   fetchMessagesByChatId,
   sendMessageToChat,
   reactToMessageApi,
   markMessageReadApi
 } from '../utils/api';
 
-/**
- * useMessages hook: fetches chats and messages from the API, manages selected chat and sending messages
- * - Fetches all chats for the current user on mount
- * - Fetches messages for the selected chat
- * - Allows sending a message to the selected chat
- */
 export const useMessages = () => {
   const { user } = useAuth();
-  const [chats, setChats] = useState<Chat[]>([]);
+  const queryClient = useQueryClient();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingChats, setLoadingChats] = useState(false); // New loading state
-  const [loadingMessages, setLoadingMessages] = useState(false); // Existing loading state renamed
-  const [sendingMessage, setSendingMessage] = useState(false); // New loading state
-  const [chatsError, setChatsError] = useState<string | null>(null); // New error state
-  const [messagesError, setMessagesError] = useState<string | null>(null); // New error state
-  const [sendMessageError, setSendMessageError] = useState<string | null>(null); // New error state
 
   const PAGE_SIZE = 30;
 
-  // Fetch chats on mount
-  useEffect(() => {
-    const getChats = async () => {
-      setLoadingChats(true);
-      setChatsError(null);
-      try {
-        const { data } = await fetchChatsApi();
-        setChats(data);
-      } catch (error: any) {
-        setChatsError(error.message || 'Failed to fetch chats.');
-        setChats([]);
-      } finally {
-        setLoadingChats(false);
-      }
-    };
-    getChats();
-  }, []);
+  // Chat Fetching
+  const { data: chatsData, isLoading: loadingChats, error: chatsError } = useQuery<{ data: Chat[] }, Error>({
+    queryKey: ['chats'],
+    queryFn: fetchChatsApi,
+  });
+  const chats = chatsData?.data || [];
 
-  // Fetch messages for selected chat (paginated)
-  useEffect(() => {
-    if (!selectedChatId) {
-      setMessages([]);
-      setHasMore(true);
-      setMessagesError(null);
-      return;
-    }
-    const getMessages = async () => {
-      setLoadingMessages(true);
-      setMessagesError(null);
-      try {
-        const { data } = await fetchMessagesByChatId(selectedChatId, PAGE_SIZE, 0);
-        setMessages(data);
-        setHasMore(data.length === PAGE_SIZE);
-      } catch (error: any) {
-        setMessagesError(error.message || 'Failed to fetch messages.');
-        setMessages([]);
-        setHasMore(false);
-      } finally {
-        setLoadingMessages(false);
-      }
-    };
-    getMessages();
-  }, [selectedChatId]);
+  // Message Fetching (Infinite Scroll)
+  const {
+    data: messagesData,
+    fetchNextPage,
+    hasNextPage,
+    isLoading: loadingMessages,
+    error: messagesError,
+    // refetch: refetchMessages // Available if needed
+  } = useInfiniteQuery<{ data: Message[] }, Error>({
+    queryKey: ['messages', selectedChatId],
+    queryFn: ({ pageParam = 0 }) => fetchMessagesByChatId(selectedChatId!, PAGE_SIZE, pageParam * PAGE_SIZE),
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.data.length === PAGE_SIZE ? allPages.length : undefined;
+    },
+    enabled: !!selectedChatId,
+  });
+  const messages = messagesData?.pages.flatMap(page => page.data) || [];
 
-  // Fetch more messages (for infinite scroll)
-  const fetchMoreMessages = useCallback(async () => {
-    if (!selectedChatId || loadingMessages || !hasMore) return;
-    setLoadingMessages(true);
-    try {
-      const { data } = await fetchMessagesByChatId(selectedChatId, PAGE_SIZE, messages.length);
-      setMessages(prev => [...prev, ...data]);
-      setHasMore(data.length === PAGE_SIZE);
-    } catch (error: any) {
-       setMessagesError(error.message || 'Failed to fetch more messages.');
-      setHasMore(false);
-    } finally {
-      setLoadingMessages(false);
-    }
-  }, [selectedChatId, loadingMessages, hasMore, messages.length]); // Added messages.length to dependency array
-
-  /**
-   * Send a message to the selected chat
-   * @param content The message content
-   */
-  const sendMessage = async (content: string) => {
-    if (!selectedChatId || !user || sendingMessage) return;
-    setSendingMessage(true);
-    setSendMessageError(null);
-    try {
-      const { data } = await sendMessageToChat(content, selectedChatId);
-      // Optimistically update messages list
-      const newMessage: Message = {
-        ...data, // Assuming backend returns full message
-        sender: user, // Add current user details
-        createdAt: new Date().toISOString(), // Add timestamp
-        chatId: selectedChatId,
-      };
-       // Prepend for consistency with potential real-time updates
-      setMessages(prev => [newMessage, ...prev]); 
-
-      // Optionally update last message in chat list
-      setChats(prev => prev.map(chat => 
-        chat.id === selectedChatId 
-          ? { ...chat, lastMessage: newMessage } 
-          : chat
-      ));
-       setSendingMessage(false);
-    } catch (error: any) {
-      setSendMessageError(error.message || 'Failed to send message.');
-      setSendingMessage(false);
-      throw error; // Re-throw to allow components to handle
-    }
+  // Send Message Mutation
+  const { mutate: sendMessageMutate, isLoading: sendingMessage, error: sendMessageError } = useMutation<{ data: Message }, Error, { content: string; chatId: string }>({
+    mutationFn: ({ content, chatId }) => sendMessageToChat(content, chatId),
+    onSuccess: (response, variables) => { // Changed 'data' to 'response' to avoid conflict
+      queryClient.invalidateQueries({ queryKey: ['messages', variables.chatId] });
+      queryClient.setQueryData(['chats'], (oldData: { data: Chat[] } | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map(chat =>
+            chat.id === variables.chatId ? { ...chat, lastMessage: response.data } : chat
+          ),
+        };
+      });
+    },
+  });
+  const sendMessage = (content: string) => {
+    if (!selectedChatId) return;
+    sendMessageMutate({ content, chatId: selectedChatId });
   };
 
-  // Add or remove a reaction to a message
-  const reactToMessage = async (messageId: string, emoji: string) => {
-    try {
-      const { data } = await reactToMessageApi(messageId, emoji);
-      // Update the specific message with new reactions
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, reactions: data.reactions } : m));
-    } catch (error) {
-      console.error('Failed to react to message:', error);
-      // Optionally handle error state for reactions
-    }
-  };
+  // React to Message Mutation
+  const { mutate: reactToMessageMutate } = useMutation<{ data: { reactions: any[] } }, Error, { messageId: string; emoji: string }>({
+    mutationFn: ({ messageId, emoji }) => reactToMessageApi(messageId, emoji),
+    onSuccess: (response, variables) => { // Changed 'data' to 'response'
+      // More targeted update for reactions:
+      queryClient.setQueryData(['messages', selectedChatId], (oldMessagesData: any) => {
+        if (!oldMessagesData) return oldMessagesData;
+        return {
+          ...oldMessagesData,
+          pages: oldMessagesData.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((message: Message) =>
+              message.id === variables.messageId ? { ...message, reactions: response.data.reactions } : message
+            ),
+          })),
+        };
+      });
+      // Fallback to invalidate if specific update is complex
+      // queryClient.invalidateQueries({ queryKey: ['messages', selectedChatId] });
+    },
+  });
+  const reactToMessage = (messageId: string, emoji: string) => reactToMessageMutate({ messageId, emoji });
 
-  // Mark a message as read
-  const markMessageRead = async (messageId: string) => {
-     // Avoid marking as read if already read by current user (basic check)
-     const messageToMark = messages.find(m => m.id === messageId);
-     if (messageToMark?.readBy?.includes(user?.id || '')) return; // Basic check
-
-    try {
-      const { data } = await markMessageReadApi(messageId);
-      // Update the specific message with new readBy list
-      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, readBy: data.readBy } : m));
-    } catch (error) {
-       console.error('Failed to mark message as read:', error);
-       // Optionally handle error state for marking as read
-    }
+  // Mark Message Read Mutation
+  const { mutate: markMessageReadMutate } = useMutation<{ data: { readBy: string[] } }, Error, string>({
+    mutationFn: (messageId: string) => markMessageReadApi(messageId),
+    onSuccess: (response, messageId) => { // Changed 'data' to 'response', 'variables' to 'messageId'
+       queryClient.setQueryData(['messages', selectedChatId], (oldMessagesData: any) => {
+        if (!oldMessagesData) return oldMessagesData;
+        return {
+          ...oldMessagesData,
+          pages: oldMessagesData.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((message: Message) =>
+              message.id === messageId ? { ...message, readBy: response.data.readBy } : message
+            ),
+          })),
+        };
+      });
+      // queryClient.invalidateQueries({ queryKey: ['messages', selectedChatId] });
+    },
+  });
+  const markMessageRead = (messageId: string) => {
+    const messageToMark = messages.find(m => m.id === messageId);
+    if (messageToMark?.readBy?.includes(user?.id || '')) return;
+    markMessageReadMutate(messageId);
   };
 
   return {
     chats,
     messages,
-    hasMore,
-    loadingChats,
-    loadingMessages,
-    sendingMessage,
-    chatsError,
-    messagesError,
-    sendMessageError,
     selectedChatId,
     selectChat: setSelectedChatId,
+
+    loadingChats,
+    chatsError: chatsError as Error | null, // Cast error for consistent return type
+
+    loadingMessages,
+    messagesError: messagesError as Error | null, // Cast error
+    fetchNextPage,
+    hasNextPage,
+
     sendMessage,
-    fetchMoreMessages,
+    sendingMessage,
+    sendMessageError: sendMessageError as Error | null, // Cast error
+
     reactToMessage,
+    // reactToMessageError, // Can be added if error state is needed for this mutation
+
     markMessageRead,
+    // markMessageReadError, // Can be added if error state is needed
   };
 };

@@ -12,7 +12,7 @@ const CircularsPage = () => {
   const { circulars, selectedCircular, selectCircular, isLoading, error } = useCirculars();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [showNewCircularModal, setShowNewCircularModal] = useState(false); // State for modal
+  // const [showNewCircularModal, setShowNewCircularModal] = useState(false); // State for modal // Removed
 
   useEffect(() => {
     console.log('CircularsPage - isLoading:', isLoading, 'error:', error, 'circulars:', circulars);
@@ -25,13 +25,13 @@ const CircularsPage = () => {
       )
     : circulars;
 
-  const handleNewCircularClick = () => {
-    setShowNewCircularModal(true);
-  };
+  // const handleNewCircularClick = () => { // Removed
+  //   setShowNewCircularModal(true); // Removed
+  // }; // Removed
 
-  const handleCloseNewCircularModal = () => {
-    setShowNewCircularModal(false);
-  };
+  // const handleCloseNewCircularModal = () => { // Removed
+  //   setShowNewCircularModal(false); // Removed
+  // }; // Removed
 
   // Display loading state
   if (isLoading) {
@@ -64,7 +64,7 @@ const CircularsPage = () => {
         {user?.role === 'admin' && (
           <button 
             className="btn-primary flex items-center"
-            onClick={handleNewCircularClick} // Add click handler
+            // onClick={handleNewCircularClick} // Add click handler // Removed
           >
             <Plus size={18} className="mr-2" />
             New Circular

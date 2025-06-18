@@ -4,7 +4,7 @@ import ChatWindow from '../components/messaging/ChatWindow';
 import { useMessages } from '../hooks/useMessages';
 
 const MessagesPage = () => {
-  const { chats, messages, selectedChatId, selectChat, sendMessage, reactToMessage, markMessageRead } = useMessages();
+  const { chats, messages, selectedChatId, selectChat, sendMessage, reactToMessage } = useMessages(); // Removed markMessageRead
   
   const selectedChat = selectedChatId 
     ? chats.find(chat => chat.id === selectedChatId) || null 
@@ -26,7 +26,7 @@ const MessagesPage = () => {
           messages={messages}
           onSendMessage={sendMessage}
           reactToMessage={reactToMessage}
-          markMessageRead={markMessageRead}
+          // markMessageRead={markMessageRead} // Removed prop
         />
       </div>
     </div>

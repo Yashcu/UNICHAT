@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { AxiosError } from 'axios';
+
+interface LocationState {
+  email?: string;
+}
 
 const ResetPasswordPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const email = (location.state as any)?.email || '';
+  const email = (location.state as LocationState)?.email || '';
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +26,9 @@ const ResetPasswordPage = () => {
       await api.post('/users/reset-password', { email, otp, password });
       setSuccess('Password reset successful! Redirecting to login...');
       setTimeout(() => navigate('/auth/login'), 1500);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset password.');
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message: string }>;
+      setError(axiosError.response?.data?.message || 'Failed to reset password.');
     } finally {
       setLoading(false);
     }

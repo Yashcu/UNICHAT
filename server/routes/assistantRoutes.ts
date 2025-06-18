@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 
 const router = express.Router();
 
@@ -6,7 +6,7 @@ const router = express.Router();
  * POST /api/assistant
  * Uses Puter.js API (no key required) to generate a response from GPT-4o
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const { prompt } = req.body;
   if (!prompt) {
     return res.status(400).json({ response: 'No prompt provided.' });
@@ -22,9 +22,9 @@ router.post('/', async (req: Request, res: Response) => {
     const data = await puterRes.json();
     const aiMessage = data?.response || 'No response.';
     res.json({ response: aiMessage });
-  } catch (err: any) {
-    console.error('Puter.js error:', err?.message || err);
-    res.status(500).json({ response: 'Sorry, there was an error contacting the AI assistant.' });
+  } catch (err) {
+    const error = err as Error; // Keep existing error casting
+    next(error); // Pass the error to the centralized handler
   }
 });
 

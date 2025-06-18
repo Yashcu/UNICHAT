@@ -1,7 +1,8 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { User } from '../models/User';
 import jwt from 'jsonwebtoken';
 import { auth } from '../middleware/auth';
+import AppError from '../utils/AppError'; // Import AppError
 import nodemailer from 'nodemailer';
 import redisClient from '../utils/redisClient';
 import rateLimit from 'express-rate-limit';
@@ -29,30 +30,20 @@ const forgotPasswordLimiter = rateLimit({
  * @desc Register a new user
  * @access Public
  */
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, email, password, role } = req.body;
     console.log('Received registration request:', { name, email, role });
 
     // Validate required fields
     if (!name || !email || !password || !role) {
-      console.log('Missing required fields:', { name: !!name, email: !!email, password: !!password, role: !!role });
-      return res.status(400).json({ 
-        message: 'All fields are required',
-        details: {
-          name: !name ? 'Name is required' : null,
-          email: !email ? 'Email is required' : null,
-          password: !password ? 'Password is required' : null,
-          role: !role ? 'Role is required' : null
-        }
-      });
+      return next(new AppError('All fields are required: name, email, password, role.', 400));
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log('User already exists with email:', email);
-      return res.status(400).json({ message: 'User with this email already exists' });
+      return next(new AppError('User with this email already exists.', 400));
     }
 
     // Create new user
@@ -83,26 +74,8 @@ router.post('/register', async (req: Request, res: Response) => {
         role: user.role
       }
     });
-  } catch (error: any) {
-    console.error('Registration error:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
-    // Handle specific mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
-      return res.status(400).json({ 
-        message: 'Validation error',
-        details: validationErrors
-      });
-    }
-
-    res.status(500).json({ 
-      message: 'Server error during registration',
-      details: error.message
-    });
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -112,22 +85,20 @@ router.post('/register', async (req: Request, res: Response) => {
  * @desc Login user and return JWT
  * @access Public
  */
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
 
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      console.warn('Login failed: user not found for email', email);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return next(new AppError('Invalid email or password', 401));
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.warn('Login failed: password mismatch for email', email);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return next(new AppError('Invalid email or password', 401));
     }
 
     // Generate JWT token
@@ -146,13 +117,14 @@ router.post('/login', async (req: Request, res: Response) => {
         role: user.role
       }
     });
-  } catch (error: any) {
+  } catch (err) {
+    const error = err as Error;
     console.error('Login error:', {
       message: error?.message,
       stack: error?.stack,
       name: error?.name
     });
-    res.status(500).json({ message: 'Server error during login', details: error?.message });
+    next(error);
   }
 });
 
@@ -162,15 +134,15 @@ router.post('/login', async (req: Request, res: Response) => {
  * @desc Get current user's profile
  * @access Private
  */
-router.get('/profile', auth, async (req: AuthRequest, res: Response) => {
+router.get('/profile', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const user = await User.findById(req.user?.userId).select('-password');
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return next(new AppError('User not found.', 404));
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -180,13 +152,13 @@ router.get('/profile', auth, async (req: AuthRequest, res: Response) => {
  * @desc Update current user's profile
  * @access Private
  */
-router.put('/profile', auth, async (req: AuthRequest, res: Response) => {
+router.put('/profile', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, bio, avatar, status } = req.body;
     const user = await User.findById(req.user?.userId);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return next(new AppError('User not found.', 404));
     }
 
     if (name) user.name = name;
@@ -197,7 +169,7 @@ router.put('/profile', auth, async (req: AuthRequest, res: Response) => {
     await user.save();
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -207,11 +179,13 @@ router.put('/profile', auth, async (req: AuthRequest, res: Response) => {
  * @desc Logout user (client should clear token)
  * @access Private
  */
-router.post('/logout', auth, async (req: Request, res: Response) => {
+router.post('/logout', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Server-side logout actions if any (e.g., blacklist token)
+    // For simple JWT, client clears token.
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -221,13 +195,13 @@ router.post('/logout', auth, async (req: Request, res: Response) => {
  * @desc Send OTP to user's university email
  * @access Public
  */
-router.post('/forgot-password', forgotPasswordLimiter, async (req: Request, res: Response) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'If this email is registered, you will receive an OTP.' });
+    if (!email) return next(new AppError('Email is required.', 400));
     const user = await User.findOne({ email });
     // Always return generic message for security
-    if (!user || user.role !== 'student') {
+    if (!user || user.role !== 'student') { // For operational errors we want to show, this is fine
       return res.status(200).json({ message: 'If this email is registered, you will receive an OTP.' });
     }
     // Generate 6-digit OTP
@@ -249,13 +223,14 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req: Request, res:
       text: `Your OTP for password reset is: ${otp}`
     });
     return res.status(200).json({ message: 'If this email is registered, you will receive an OTP.' });
-  } catch (error: any) {
+  } catch (err) {
+    const error = err as Error;
     console.error('Forgot-password error:', {
       message: error?.message,
       stack: error?.stack,
       name: error?.name
     });
-    return res.status(500).json({ message: 'Failed to process request.' });
+    next(error);
   }
 });
 
@@ -271,29 +246,30 @@ function isStrongPassword(password: string): boolean {
  * @desc Reset password using OTP
  * @access Public
  */
-router.post('/reset-password', async (req: Request, res: Response) => {
+router.post('/reset-password', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, otp, password } = req.body;
-    if (!email || !otp || !password) return res.status(400).json({ message: 'All fields are required' });
+    if (!email || !otp || !password) return next(new AppError('All fields are required: email, otp, password.', 400));
     if (!isStrongPassword(password)) {
-      return res.status(400).json({ message: 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.' });
+      return next(new AppError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.', 400));
     }
     const user = await User.findOne({ email });
-    // Always return generic error for security
-    if (!user) return res.status(400).json({ message: 'Invalid OTP or email.' });
+    // For security, keep generic messages for invalid OTP/email, but use AppError for flow
+    if (!user) return next(new AppError('Invalid OTP or email.', 400));
     const storedOtp = await redisClient.get(`otp:${email}`);
-    if (!storedOtp || storedOtp !== otp) return res.status(400).json({ message: 'Invalid OTP or email.' });
+    if (!storedOtp || storedOtp !== otp) return next(new AppError('Invalid OTP or email.', 400));
     user.password = password;
     await user.save();
     await redisClient.del(`otp:${email}`);
     res.json({ message: 'Password reset successful' });
-  } catch (error: any) {
+  } catch (err) {
+    const error = err as Error;
     console.error('Reset-password error:', {
       message: error?.message,
       stack: error?.stack,
       name: error?.name
     });
-    res.status(500).json({ message: 'Failed to reset password.' });
+    next(error);
   }
 });
 

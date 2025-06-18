@@ -19,10 +19,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+import { AxiosError } from 'axios'; // Import AxiosError
+
+interface ApiErrorData {
+  message?: string;
+  // Add other common error fields if your API returns them
+}
+
 // Add response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: AxiosError<ApiErrorData>) => { // Type the error here
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/auth/login';
@@ -50,7 +57,7 @@ export const logoutUser = () =>
 export const fetchCirculars = () => 
   api.get('/circulars');
 
-export const createCircular = (circular: any) => // Use a more specific type if available
+export const createCircular = (circular: { title: string; content: string; category: string; department?: string; year?: number; forRoles: string[] }) => // More specific type
   api.post('/circulars', circular);
 
 // Messaging API calls

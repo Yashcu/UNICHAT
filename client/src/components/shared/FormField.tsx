@@ -1,15 +1,15 @@
 import React from 'react';
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { UseFormRegister, FieldErrors, RegisterOptions, FieldValues } from 'react-hook-form';
 
 interface FormFieldProps {
   label: string;
   type: string;
   name: string;
   icon: React.ReactNode;
-  register: UseFormRegister<any>; // Use any for now, can be more specific if needed
-  error: FieldErrors<any> | undefined; // Use any for now
+  register: UseFormRegister<FieldValues>;
+  error: FieldErrors<FieldValues> | undefined;
   placeholder?: string;
-  validationRules?: any; // Rules passed to register
+  validationRules?: RegisterOptions; // Rules passed to register
 }
 
 const FormField: React.FC<FormFieldProps> = ({

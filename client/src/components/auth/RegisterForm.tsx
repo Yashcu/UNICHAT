@@ -17,7 +17,7 @@ type RegisterFormData = {
 };
 
 const RegisterForm = () => {
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting }, setError } = useForm<RegisterFormData>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<RegisterFormData>({
     defaultValues: {
       role: 'student'
     }
@@ -37,7 +37,7 @@ const RegisterForm = () => {
       setTimeout(() => {
         navigate('/');
       }, 1500);
-    } catch (error: any) {
+    } catch (error: { response?: { data?: { message?: string }, status?: number }, message?: string }) {
       console.error('Registration error details:', {
         message: error.message,
         response: error.response?.data,
