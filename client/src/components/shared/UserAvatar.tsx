@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from '../../types';
+// import { User } from '../../types'; // Removed User type import
 
 interface UserAvatarProps {
   user: { name: string; profilePic?: string | null };

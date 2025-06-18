@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { Message, User, Chat } from '../../types';
-import { format } from 'date-fns';
+import { Message, Chat } from '../../types'; // Removed User
+// import { format } from 'date-fns'; // Removed format
 import { Send, PaperclipIcon, Info, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { cn } from '../../utils/cn';
+// import { cn } from '../../utils/cn'; // Removed cn
 import UserAvatar from '../shared/UserAvatar';
 import MessageItem from './MessageItem';
 
@@ -13,20 +13,38 @@ interface ChatWindowProps {
   messages: Message[];
   onSendMessage: (content: string) => void;
   reactToMessage: (messageId: string, emoji: string) => void;
-  markMessageRead: (messageId: string) => void;
+  // markMessageRead: (messageId: string) => void; // Removed markMessageRead prop
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ 
   chat, 
   messages, 
   onSendMessage, 
-  reactToMessage, 
-  markMessageRead 
+  reactToMessage
+  // markMessageRead // Removed markMessageRead from destructuring
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [debouncedMessage, setDebouncedMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  // Virtualized message row
+  // Moved Row definition before the early return to fix react-hooks/rules-of-hooks
+  const Row = useCallback(
+    ({ index, style }) => {
+      const message = messages[index];
+      return (
+        <div style={style} key={message.id}>
+          <MessageItem
+            message={message}
+            currentUser={user}
+            reactToMessage={reactToMessage}
+          />
+        </div>
+      );
+    },
+    [messages, user, reactToMessage]
+  );
 
   // Debounce message input
   useEffect(() => {
@@ -72,23 +90,6 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({
   const chatAvatarUser = chat.isGroup
     ? { name: chat.name || "Group" }
     : otherUser || { name: "Unknown User" };
-
-  // Virtualized message row
-  const Row = useCallback(
-    ({ index, style }) => {
-      const message = messages[index];
-      return (
-        <div style={style} key={message.id}>
-          <MessageItem
-            message={message}
-            currentUser={user}
-            reactToMessage={reactToMessage}
-          />
-        </div>
-      );
-    },
-    [messages, user, reactToMessage]
-  );
 
   return (
     <div className="flex flex-col h-full">

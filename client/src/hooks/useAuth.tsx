@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         const { data } = await fetchUserProfile();
         setUser(data);
-      } catch (error: any) {
+      } catch (error: { response?: { data?: { message?: string } }, message?: string }) {
         console.error('Auth check error:', error);
         localStorage.removeItem('token');
         setUser(null);
@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data } = await loginUser(email, password);
       localStorage.setItem('token', data.token);
       setUser(data.user);
-    } catch (error: any) {
+    } catch (error: { response?: { data?: { message?: string } }, message?: string }) {
       console.error('Login error:', error);
       setAuthError(error.response?.data?.message || error.message || 'Login failed. Please try again.');
       throw error; // Re-throw to allow components to handle
@@ -68,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data } = await registerUser(name, email, password, role);
       localStorage.setItem('token', data.token);
       setUser(data.user);
-    } catch (error: any) {
+    } catch (error: { response?: { data?: { message?: string } }, message?: string }) {
       console.error('Registration error:', error);
        setAuthError(error.response?.data?.message || error.message || 'Registration failed. Please try again.');
       throw error; // Re-throw to allow components to handle
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(null);
       // Consider using navigate instead of window.location.href for SPA
       window.location.href = '/auth/login'; 
-    } catch (error: any) {
+    } catch (error: { response?: { data?: { message?: string } }, message?: string }) {
       console.error('Logout error:', error);
       // Even if the server request fails, clear local state
       localStorage.removeItem('token');
@@ -102,6 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

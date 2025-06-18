@@ -12,7 +12,7 @@ type LoginFormData = {
 };
 
 const LoginForm = () => {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setError } = useForm<LoginFormData>();
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>();
   const { login } = useAuth();
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ const LoginForm = () => {
     try {
       await login(data.email, data.password);
       navigate('/');
-    } catch (error: any) {
+    } catch (error: { response?: { data?: { message?: string }, status?: number }, message?: string }) {
       console.error('Login error:', error);
       if (error.response?.status === 429) {
         setLoginError('Too many login attempts. Please try again later.');

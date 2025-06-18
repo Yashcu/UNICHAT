@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { Chat } from '../models/Chat';
 import { auth } from '../middleware/auth';
 
@@ -12,7 +12,7 @@ type AuthRequest = Request & { user?: { userId: string } };
  * @desc Create a new one-on-one chat
  * @access Private
  */
-router.post('/', auth, async (req: AuthRequest, res: Response) => {
+router.post('/', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.body;
     const currentUserId = req.user?.userId;
@@ -22,7 +22,7 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
     }
 
     // Check if chat already exists
-    let chat = await Chat.find({
+    const chat = await Chat.find({
       isGroupChat: false,
       $and: [
         { users: { $elemMatch: { $eq: currentUserId } } },
@@ -48,7 +48,7 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(fullChat);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -58,7 +58,7 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
  * @desc Get all chats for the current user
  * @access Private
  */
-router.get('/', auth, async (req: AuthRequest, res: Response) => {
+router.get('/', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const chats = await Chat.find({ users: { $elemMatch: { $eq: req.user?.userId } } })
       .populate('users', '-password')
@@ -68,7 +68,7 @@ router.get('/', auth, async (req: AuthRequest, res: Response) => {
 
     res.json(chats);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -78,7 +78,7 @@ router.get('/', auth, async (req: AuthRequest, res: Response) => {
  * @desc Create a new group chat
  * @access Private
  */
-router.post('/group', auth, async (req: AuthRequest, res: Response) => {
+router.post('/group', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, users } = req.body;
 
@@ -107,7 +107,7 @@ router.post('/group', auth, async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(fullGroupChat);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -117,7 +117,7 @@ router.post('/group', auth, async (req: AuthRequest, res: Response) => {
  * @desc Rename a group chat
  * @access Private
  */
-router.put('/rename', auth, async (req: Request, res: Response) => {
+router.put('/rename', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { chatId, chatName } = req.body;
 
@@ -135,7 +135,7 @@ router.put('/rename', auth, async (req: Request, res: Response) => {
 
     res.json(updatedChat);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -145,7 +145,7 @@ router.put('/rename', auth, async (req: Request, res: Response) => {
  * @desc Add a user to a group chat
  * @access Private
  */
-router.put('/groupadd', auth, async (req: Request, res: Response) => {
+router.put('/groupadd', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { chatId, userId } = req.body;
 
@@ -163,7 +163,7 @@ router.put('/groupadd', auth, async (req: Request, res: Response) => {
 
     res.json(added);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -173,7 +173,7 @@ router.put('/groupadd', auth, async (req: Request, res: Response) => {
  * @desc Remove a user from a group chat
  * @access Private
  */
-router.put('/groupremove', auth, async (req: Request, res: Response) => {
+router.put('/groupremove', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { chatId, userId } = req.body;
 
@@ -191,7 +191,7 @@ router.put('/groupremove', auth, async (req: Request, res: Response) => {
 
     res.json(removed);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 

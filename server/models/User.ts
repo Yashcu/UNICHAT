@@ -66,8 +66,8 @@ userSchema.pre('save', async function(next) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
-  } catch (error: any) {
-    next(error);
+  } catch (error) { // Type can be Error or a more specific Mongoose/Bcrypt error if known
+    next(error as Error); // Pass error to next, ensuring it's an Error type
   }
 });
 
@@ -81,7 +81,7 @@ mongoose.connection.on('connected', async () => {
   try {
     await mongoose.connection.db?.collection('users').dropIndex('username_1');
     console.log('Dropped username index successfully');
-  } catch (error) {
+  } catch { // Removed unused _error variable
     // Ignore error if index doesn't exist
     console.log('No username index to drop');
   }

@@ -15,6 +15,7 @@ export const useNotifications = (userRole: UserRole = 'student', userId: string 
         });
         setNotifications(data);
       } catch (error) {
+        console.error("Failed to fetch notifications:", error);
         setNotifications([]);
       }
     };
@@ -27,6 +28,7 @@ export const useNotifications = (userRole: UserRole = 'student', userId: string 
       await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(notif => notif.id === id ? { ...notif, isRead: true } : notif));
     } catch (error) {
+      console.error("Failed to mark notification as read:", error);
       // Optionally handle error
     }
   };
@@ -37,6 +39,7 @@ export const useNotifications = (userRole: UserRole = 'student', userId: string 
       await api.put('/notifications/read-all', { userId });
       setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
     } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
       // Optionally handle error
     }
   };

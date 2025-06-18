@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -7,6 +7,7 @@ import { chatRoutes } from './routes/chatRoutes';
 import { messageRoutes } from './routes/messageRoutes';
 import circularRoutes from './routes/circularRoutes';
 import rateLimit from 'express-rate-limit';
+import errorHandler from './middleware/errorHandler'; // Import errorHandler
 
 dotenv.config();
 
@@ -41,40 +42,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/unichat',
 
 // Routes
 app.use('/api/v1/', apiLimiter);
-app.use('/api/v1/users', (req, res, next) => {
-  try {
-    return userRoutes(req, res, next);
-  } catch (err: any) {
-    console.error('Error in /api/v1/users route:', err);
-    res.status(500).json({ message: 'Internal server error', error: err?.message || err });
-  }
-});
-app.use('/api/v1/chats', (req, res, next) => {
-  try {
-    return chatRoutes(req, res, next);
-  } catch (err: any) {
-    console.error('Error in /api/v1/chats route:', err);
-    res.status(500).json({ message: 'Internal server error', error: err?.message || err });
-  }
-});
-app.use('/api/v1/messages', (req, res, next) => {
-  try {
-    return messageRoutes(req, res, next);
-  } catch (err: any) {
-    console.error('Error in /api/v1/messages route:', err);
-    res.status(500).json({ message: 'Internal server error', error: err?.message || err });
-  }
-});
-app.use('/api/v1/circulars', (req, res, next) => {
-  try {
-    return circularRoutes(req, res, next);
-  } catch (err: any) {
-    console.error('Error in /api/v1/circulars route:', err);
-    res.status(500).json({ message: 'Internal server error', error: err?.message || err });
-  }
-});
+// The router instances themselves should handle errors and call next(error)
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/chats', chatRoutes);
+app.use('/api/v1/messages', messageRoutes);
+app.use('/api/v1/circulars', circularRoutes);
 
 // Remove old /api/ routes if present
+
+// Global error handler - should be defined after all other middleware and routes
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

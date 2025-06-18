@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { AxiosError } from 'axios';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -18,8 +19,9 @@ const ForgotPasswordPage = () => {
       await api.post('/users/forgot-password', { email });
       setSuccess('OTP sent to your university email.');
       setTimeout(() => navigate('/auth/reset-password', { state: { email } }), 1000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send OTP.');
+    } catch (err) {
+      const axiosError = err as AxiosError<{ message: string }>;
+      setError(axiosError.response?.data?.message || 'Failed to send OTP.');
     } finally {
       setLoading(false);
     }

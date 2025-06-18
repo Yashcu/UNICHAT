@@ -1,7 +1,9 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { Message } from '../models/Message';
 import { Chat } from '../models/Chat';
 import { auth } from '../middleware/auth';
+import AppError from '../utils/AppError';
+import { body, validationResult } from 'express-validator'; // Import express-validator components
 
 const router = express.Router();
 
@@ -13,13 +15,25 @@ type AuthRequest = Request & { user?: { userId: string } };
  * @desc Send a message to a chat
  * @access Private
  */
-router.post('/', auth, async (req: AuthRequest, res: Response) => {
+const sendMessageValidationRules = [
+  body('content').notEmpty().withMessage('Message content cannot be empty.').trim().escape(),
+  body('chatId').notEmpty().withMessage('Chat ID cannot be empty.').isMongoId().withMessage('Invalid Chat ID format.')
+];
+
+router.post('/', auth, sendMessageValidationRules, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(err => err.msg).join(' ');
+      return next(new AppError(`Validation failed: ${errorMessages}`, 400));
+    }
+
     const { content, chatId } = req.body;
 
-    if (!content || !chatId) {
-      return res.status(400).json({ message: 'Invalid data passed into request' });
-    }
+    // Manual validation removed as express-validator handles it
+    // if (!content || !chatId) {
+    //   return next(new AppError('Invalid data passed into request. Content and chatId are required.', 400));
+    // }
 
     const newMessage = new Message({
       sender: req.user?.userId,
@@ -43,7 +57,7 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
 
     res.json(message);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -53,7 +67,7 @@ router.post('/', auth, async (req: AuthRequest, res: Response) => {
  * @desc Get all messages for a chat (paginated)
  * @access Private
  */
-router.get('/:chatId', auth, async (req: AuthRequest, res: Response) => {
+router.get('/:chatId', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const limit = parseInt(req.query.limit as string) || 30;
     const skip = parseInt(req.query.skip as string) || 0;
@@ -67,7 +81,7 @@ router.get('/:chatId', auth, async (req: AuthRequest, res: Response) => {
 
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -77,7 +91,7 @@ router.get('/:chatId', auth, async (req: AuthRequest, res: Response) => {
  * @desc Mark a message as read
  * @access Private
  */
-router.put('/read', auth, async (req: AuthRequest, res: Response) => {
+router.put('/read', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { messageId } = req.body;
 
@@ -91,12 +105,12 @@ router.put('/read', auth, async (req: AuthRequest, res: Response) => {
       .populate('readBy', 'username avatar email');
 
     if (!message) {
-      return res.status(404).json({ message: 'Message not found' });
+      return next(new AppError('Message not found with that ID.', 404));
     }
 
     res.json(message);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
@@ -106,16 +120,16 @@ router.put('/read', auth, async (req: AuthRequest, res: Response) => {
  * @desc Add or remove a reaction to a message
  * @access Private
  */
-router.patch('/:messageId/reactions', auth, async (req: AuthRequest, res: Response) => {
+router.patch('/:messageId/reactions', auth, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { emoji } = req.body;
     const userId = req.user?.userId;
     if (!emoji || !userId) {
-      return res.status(400).json({ message: 'Emoji and user required' });
+      return next(new AppError('Emoji and userId are required for reactions.', 400));
     }
     // Check if user already reacted with this emoji
     const message = await Message.findById(req.params.messageId);
-    if (!message) return res.status(404).json({ message: 'Message not found' });
+    if (!message) return next(new AppError('Message not found with that ID.', 404));
     const existing = message.reactions?.find(r => r.userId.toString() === userId && r.emoji === emoji);
     let updated;
     if (existing) {
@@ -135,7 +149,7 @@ router.patch('/:messageId/reactions', auth, async (req: AuthRequest, res: Respon
     }
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    next(error);
   }
 });
 
