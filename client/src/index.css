@@ -4,11 +4,11 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 min-h-screen;
+    @apply bg-gray-50 text-gray-900 min-h-screen dark:bg-gray-900 dark:text-gray-100;
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-primary-500 dark:ring-primary-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
   }
 }
 
@@ -18,23 +18,23 @@
   }
 
   .btn-primary {
-    @apply btn bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700;
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-700;
   }
 
   .btn-secondary {
-    @apply btn bg-secondary-500 text-white hover:bg-secondary-600 active:bg-secondary-700;
+    @apply btn bg-secondary-500 text-white hover:bg-secondary-600 active:bg-secondary-700 dark:bg-secondary-600 dark:hover:bg-secondary-700;
   }
 
   .btn-outline {
-    @apply btn border border-gray-300 hover:bg-gray-100 active:bg-gray-200;
+    @apply btn border border-gray-300 hover:bg-gray-100 active:bg-gray-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:border-gray-500;
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500;
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm p-4 transition-all duration-200;
+    @apply bg-white rounded-xl shadow-sm p-4 transition-all duration-200 dark:bg-gray-800 dark:shadow-slate-700;
   }
 
   .avatar {

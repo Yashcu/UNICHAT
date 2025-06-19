@@ -5,9 +5,17 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  profilePic?: string;
+  profilePic?: string; // This will be treated as avatarUrl
   createdAt: string;
-  status?: string;
+  status?: 'online' | 'offline' | string; // More specific status
+}
+
+export interface Attachment {
+  fileName: string;
+  fileType: string;
+  fileURL?: string; // Will be populated after upload
+  previewURL?: string; // For images on client before upload
+  size?: number;
 }
 
 export interface Message {
@@ -17,6 +25,7 @@ export interface Message {
   chatId: string;
   createdAt: string;
   sender?: User;
+  attachments?: Attachment[]; // Added attachments field
   reactions?: Array<{ userId: string; emoji: string }>;
   readBy?: string[];
 }

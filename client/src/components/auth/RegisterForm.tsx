@@ -57,7 +57,7 @@ const RegisterForm = () => {
         label="Full Name"
         name="name"
         type="text"
-        icon={<User size={18} className="text-gray-400" />}
+        icon={<User size={18} className="text-gray-400 dark:text-gray-500" />}
         register={register}
         error={errors}
         placeholder="John Doe"
@@ -68,7 +68,7 @@ const RegisterForm = () => {
         label="Email Address"
         name="email"
         type="email"
-        icon={<Mail size={18} className="text-gray-400" />}
+        icon={<Mail size={18} className="text-gray-400 dark:text-gray-500" />}
         register={register}
         error={errors}
         placeholder="your.email@university.edu"
@@ -85,7 +85,7 @@ const RegisterForm = () => {
         label="Password"
         name="password"
         type="password"
-        icon={<Lock size={18} className="text-gray-400" />}
+        icon={<Lock size={18} className="text-gray-400 dark:text-gray-500" />}
         register={register}
         error={errors}
         placeholder="••••••••"
@@ -102,7 +102,7 @@ const RegisterForm = () => {
         label="Confirm Password"
         name="confirmPassword"
         type="password"
-        icon={<Lock size={18} className="text-gray-400" />}
+        icon={<Lock size={18} className="text-gray-400 dark:text-gray-500" />}
         register={register}
         error={errors}
         placeholder="••••••••"
@@ -113,17 +113,17 @@ const RegisterForm = () => {
       />
 
       <div> {/* Role selection doesn't fit FormField structure directly */}
-        <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Role
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UserCircle size={18} className="text-gray-400" />
+            <UserCircle size={18} className="text-gray-400 dark:text-gray-500" /> {/* Icon color for dark mode */}
           </div>
           <select
             id="role"
             {...register('role')}
-            className="input pl-10"
+            className="input pl-10" // .input handles dark mode
           >
             <option value="student">Student</option>
             <option value="faculty">Faculty</option>
@@ -134,20 +134,20 @@ const RegisterForm = () => {
       </div>
 
       {registerError && (
-        <p className="mt-2 text-sm text-red-600 text-center">{registerError}</p>
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400 text-center">{registerError}</p>
       )}
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="btn-primary w-full flex justify-center"
+        className="btn-primary w-full flex justify-center" // .btn-primary handles dark mode
       >
         {isSubmitting ? <ButtonSpinner /> : 'Register'}
       </button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Already have an account?{' '}
-        <Link to="/auth/login" className="font-medium text-primary-600 hover:text-primary-500">
+        <Link to="/auth/login" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
           Sign in
         </Link>
       </p>
