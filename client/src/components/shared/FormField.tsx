@@ -26,7 +26,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
   return (
     <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         {label}
       </label>
       <div className="relative">
@@ -42,7 +42,7 @@ const FormField: React.FC<FormFieldProps> = ({
         />
       </div>
       {fieldError && (
-        <p className="mt-1 text-sm text-red-600">{fieldError.message as string}</p>
+        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldError.message as string}</p>
       )}
     </div>
   );

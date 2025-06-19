@@ -4,6 +4,10 @@ import App from './App'; // Removed .tsx for consistency if resolver supports it
 import './index.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { initializeTheme } from './hooks/useTheme'; // Import initializeTheme
+
+// Initialize theme before rendering
+initializeTheme();
 
 // Create a client
 const queryClient = new QueryClient();

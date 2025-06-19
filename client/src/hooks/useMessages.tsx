@@ -1,5 +1,5 @@
-import { useState } from 'react'; // Removed useEffect, useCallback
-import { Chat, Message } from '../types';
+import { useState } from 'react';
+import { Chat, Message, Attachment } from '../types'; // Added Attachment
 import { useAuth } from './useAuth';
 import {
   useQuery,
@@ -48,10 +48,11 @@ export const useMessages = () => {
   const messages = messagesData?.pages.flatMap(page => page.data) || [];
 
   // Send Message Mutation
-  const { mutate: sendMessageMutate, isLoading: sendingMessage, error: sendMessageError } = useMutation<{ data: Message }, Error, { content: string; chatId: string }>({
-    mutationFn: ({ content, chatId }) => sendMessageToChat(content, chatId),
-    onSuccess: (response, variables) => { // Changed 'data' to 'response' to avoid conflict
+  const { mutate: sendMessageMutate, isLoading: sendingMessage, error: sendMessageError } = useMutation<{ data: Message }, Error, { content: string; chatId: string; attachments?: Attachment[] }>({
+    mutationFn: ({ content, chatId, attachments }) => sendMessageToChat(content, chatId, attachments), // Pass attachments to API call
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.chatId] });
+      // Optimistic update for lastMessage in chats query
       queryClient.setQueryData(['chats'], (oldData: { data: Chat[] } | undefined) => {
         if (!oldData) return oldData;
         return {
@@ -61,11 +62,15 @@ export const useMessages = () => {
           ),
         };
       });
+      // TODO: Could potentially add optimistic update for the new message in ['messages', variables.chatId] query data
+      // This would involve adding the new message (response.data) to the messages list directly.
     },
   });
-  const sendMessage = (content: string) => {
+
+  // Updated sendMessage to accept attachments
+  const sendMessage = (content: string, attachments?: Attachment[]) => {
     if (!selectedChatId) return;
-    sendMessageMutate({ content, chatId: selectedChatId });
+    sendMessageMutate({ content, chatId: selectedChatId, attachments });
   };
 
   // React to Message Mutation

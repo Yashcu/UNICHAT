@@ -38,7 +38,7 @@ const LoginForm = () => {
         label="Email Address"
         name="email"
         type="email"
-        icon={<Mail size={18} className="text-gray-400" />}
+        icon={<Mail size={18} className="text-gray-400 dark:text-gray-500" />}
         register={register}
         error={errors}
         placeholder="your.email@university.edu"
@@ -55,7 +55,7 @@ const LoginForm = () => {
         label="Password"
         name="password"
         type="password"
-        icon={<Lock size={18} className="text-gray-400" />}
+        icon={<Lock size={18} className="text-gray-400 dark:text-gray-500" />}
         register={register}
         error={errors}
         placeholder="••••••••"
@@ -74,35 +74,35 @@ const LoginForm = () => {
             id="remember-me"
             name="remember-me"
             type="checkbox"
-            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            className="h-4 w-4 text-primary-600 dark:text-primary-500 focus:ring-primary-500 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700"
           />
-          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
             Remember me
           </label>
         </div>
 
         <div className="text-sm">
-          <Link to="/auth/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
+          <Link to="/auth/forgot-password" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
             Forgot password?
           </Link>
         </div>
       </div>
 
       {loginError && (
-        <p className="mt-2 text-sm text-red-600 text-center">{loginError}</p>
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400 text-center">{loginError}</p>
       )}
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="btn-primary w-full flex justify-center"
+        className="btn-primary w-full flex justify-center" // .btn-primary handles dark mode
       >
         {isSubmitting ? <ButtonSpinner /> : 'Sign in'}
       </button>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Don't have an account?{' '}
-        <Link to="/auth/register" className="font-medium text-primary-600 hover:text-primary-500">
+        <Link to="/auth/register" className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
           Register here
         </Link>
       </p>

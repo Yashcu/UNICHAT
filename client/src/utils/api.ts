@@ -60,6 +60,8 @@ export const fetchCirculars = () =>
 export const createCircular = (circular: { title: string; content: string; category: string; department?: string; year?: number; forRoles: string[] }) => // More specific type
   api.post('/circulars', circular);
 
+import { Attachment } from '../types'; // Import Attachment type
+
 // Messaging API calls
 export const fetchChats = () =>
   api.get('/chats');
@@ -67,8 +69,8 @@ export const fetchChats = () =>
 export const fetchMessagesByChatId = (chatId: string, limit: number, skip: number) =>
   api.get(`/messages/${chatId}?limit=${limit}&skip=${skip}`);
 
-export const sendMessageToChat = (content: string, chatId: string) =>
-  api.post('/messages', { content, chatId });
+export const sendMessageToChat = (content: string, chatId: string, attachments?: Attachment[]) =>
+  api.post('/messages', { content, chatId, attachments });
 
 export const reactToMessageApi = (messageId: string, emoji: string) =>
   api.patch(`/messages/${messageId}/reactions`, { emoji });
